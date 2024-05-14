@@ -2,95 +2,104 @@ const HV = 999999
 let T
 let TF
 let TPLL
-let NT
-let NS
-let STAA
-let STAP
-let SPS
-let PEC
+let NTCE //personas totales CE
+let NTC //personas totales C
+let STAC //sumatoria TA C
+let STAE //sumatoria TA CE
+let SLLCE //sumatoria llegadas CE
+let SLLC //sumatoria llegadas C
+let SSE //sumatoria salida CE
+let SSC //sumatoria salida C
+let PEC //promedio espera C
+let PECE //promedio espera CE
 
-let TPSA = []
-let TPSP = []
-let ITOA = []
-let ITOP = []
-let STOP = []
-let STOA = []
-let PTOA = []
-let PTOP = []
+let TPSCE = [] //tiempo proxima salida
+let TPSC = []
+let ITOCE = [] //intervalo tiempo ocioso
+let ITOC = []
+let STOCE = [] //sumatoria tiempo ocioso
+let STOC = []
+let PTOCE = [] //porcentaje de tiempo ocioso
+let PTOC = []
 
 function inicializar_array(array, tam_array, valor){
     for(let i = 0; i < tam_array; i++){
-        array[i] = valor; // Fix: Changed tam_array to i
+        array[i] = valor;
     }
 }
 
 function inicializacion(N, M){
-    inicializar_array(TPSA, N, HV)
-    inicializar_array(TPSP, M, HV)
-    inicializar_array(ITOA, N, 0)
-    inicializar_array(ITOP, M, 0)
-    inicializar_array(STOA, N, 0)
-    inicializar_array(STOP, M, 0)
-    inicializar_array(PTOA, N, 0)
-    inicializar_array(PTOP, M, 0)
+    inicializar_array(TPSCE, N, HV)
+    inicializar_array(TPSC, M, HV)
+    inicializar_array(ITOCE, N, 0)
+    inicializar_array(ITOC, M, 0)
+    inicializar_array(STOCE, N, 0)
+    inicializar_array(STOC, M, 0)
+    inicializar_array(PTOCE, N, 0)
+    inicializar_array(PTOC, M, 0)
     
-    T = 0
-    TF = 100
-    TPLL = 0
-    NS = 0
-    NT = 0
-    STAA = 0
-    STAP = 0
-    SPS = 0
-    PEC = 0
+    let T = 0
+    let TF = 0
+    let TPLL = 0
+    let NTCE = 0 //personas totales CE
+    let NTC = 0 //personas totales C
+    let STAC = 0 //sumatoria TA C
+    let STAE = 0 //sumatoria TA CE
+    let SLLCE = 0 //sumatoria llegadas CE
+    let SLLC = 0 //sumatoria llegadas C
+    let SSE = 0 //sumatoria salida CE
+    let SSC = 0 //sumatoria salida C
 }
 
-function algoritmo(M, N){
+function algoritmo(C, CE){
 
-    inicializacion(N, M)
+    inicializacion(C, CE)
 
     while(T < TF){
-        metodologia(N, M)
+        metodologia(C, CE)
     }
 
-    while(NS > 0){
-        metodologia(N, M)
+    while(NSC > 0 && NSCE > 0){
+        metodologia(C, CE)
         TPLL = HV
     }
 
-    PEC = (SPS - STAA - STAP) / NT
+    PEC = (SSC - SLLC - STAC) / NTC //promedio espera
+    PECE = (SSE - SLLCE - STAE) / NTC //promedio espera
 
-    for(let i = 0; i < M; i++){
-        PTOA[i] = STOA[i] * 100 / T
+    for(let i = 0; i < CE; i++){
+        ITOCE[i] = STOCE[i] * 100 / T
     }
 
-    for(let i = 0; i < N; i++){
-        PTOP[i] = STOP[i] * 100 / T
+    for(let i = 0; i < C; i++){
+        ITOC[i] = STOC[i] * 100 / T
     }
+
+    //FALTA ARREPENTIMIENTO
 
     //imprimir
 }
 
 function metodologia(N, M){
-    let i = menor(TPSA)
-    let j = menor(TPSP)
+    let i = menor(TPSC)
+    let j = menor(TPSCE)
 
-    if(TPSP[j] <= TPSA[i]){
-        if(TPLL <= TPSP[j]){
-            llegada(N, M)
+    if(TPSC[j] <= TPSCE[i]){
+        if(TPLL <= TPSC[j]){
+            llegada(C, CE)
         }else{
-            salida_profesor(j, N, M)
+            salida_C(j, C, CE)
         }
     }else{
-        if(TPLL <= TPSA[i]){
-            llegada(N, M)
+        if(TPLL <= TPSCE[i]){
+            llegada(C, CE)
         }else{
-            salida_ayudante(i, N, M)
+            salida_CE(i, C, CE)
         }
     }
 }
 
-function llegada(N, M){
+function llegada(C, CE){
     SPS += (TPLL - T) * NS
     T = TPLL
     let ia = generar_ia()
@@ -99,45 +108,45 @@ function llegada(N, M){
     NS++
     NT++
     if(NS <= M){
-        let i = TPSP.indexOf(HV) //profesor libre
-        let tap = generar_tap()
-        TPSP[i] = T + tap
+        let i = TPSC.indexOf(HV) //profesor libre
+        let tap = generar_tac()
+        TPSC[i] = T + tap
         STAP += tap
         STOP[i] += T - ITOP[i]
     }else if(NS <= M + N){
-        let i = TPSA.indexOf(HV) //ayudante libre
-        let taa = generar_taa()
-        TPSA[i] = T + taa
+        let i = TPSCE.indexOf(HV) //ayudante libre
+        let taa = generar_tae()
+        TPSCE[i] = T + taa
         STAA += taa
         STOA[i] += T - ITOA[i]
     }
 }
 
-function salida_profesor(i, N, M){
-    SPS += (TPSP[i] - T) * NS
-    T = TPSP[i]
+function salida_C(i, C, CE){
+    SPS += (TPSC[i] - T) * NS
+    T = TPSC[i]
     NS--
     if(NS >= M){
-        let tap = generar_tap()
-        TPSP[i] = T + tap
+        let tap = generar_tac()
+        TPSC[i] = T + tap
         STAP += tap
     }else{
         ITOP[i] = T
-        TPSP[i] = HV
+        TPSC[i] = HV
     }
 }
 
-function salida_ayudante(i, N, M){
-    SPS += (TPSA[i] - T) * NS
-    T = TPSA[i]
+function salida_CE(i, N, M){
+    SPS += (TPSCE[i] - T) * NS
+    T = TPSCE[i]
     NS--
     if(NS >= M + N){
-        let taa = generar_taa()
-        TPSA[i] = T + taa
+        let taa = generar_tae()
+        TPSCE[i] = T + taa
         STAA += taa
     }else{
         ITOA[i] = T
-        TPSA[i] = HV
+        TPSCE[i] = HV
     }
 }
 
@@ -151,11 +160,11 @@ function menor(array){
     return i
 }
 
-function generar_tap(){
+function generar_tac(){
     return Math.random();
 }
 
-function generar_taa(){
+function generar_tae(){
     return Math.random();
 }
 
@@ -164,4 +173,4 @@ function generar_ia(){
 }
 
 algoritmo(2, 4)
-console.log(PEC, PTOA, PTOP)
+console.log()
