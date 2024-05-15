@@ -2,6 +2,8 @@ const HV = 999999
 let T
 let TF
 let TPLL
+let NSC
+let NSCE
 let NTCE //personas totales CE
 let NTC //personas totales C
 let STAC //sumatoria TA C
@@ -12,15 +14,17 @@ let SSE //sumatoria salida CE
 let SSC //sumatoria salida C
 let PEC //promedio espera C
 let PECE //promedio espera CE
+let SACE //sumatoria arrepentidos CE
+let SAC //sumatoria arrepentidos C
 
 let TPSCE = [] //tiempo proxima salida
-let TPSC = []
+let TPSC = [] //tiempo proxima salida
 let ITOCE = [] //intervalo tiempo ocioso
-let ITOC = []
+let ITOC = [] //intervalo tiempo ocioso
 let STOCE = [] //sumatoria tiempo ocioso
-let STOC = []
+let STOC = [] //sumatoria tiempo ocioso
 let PTOCE = [] //porcentaje de tiempo ocioso
-let PTOC = []
+let PTOC = [] //porcentaje de tiempo ocioso
 
 function inicializar_array(array, tam_array, valor){
     for(let i = 0; i < tam_array; i++){
@@ -28,27 +32,33 @@ function inicializar_array(array, tam_array, valor){
     }
 }
 
-function inicializacion(N, M){
-    inicializar_array(TPSCE, N, HV)
-    inicializar_array(TPSC, M, HV)
-    inicializar_array(ITOCE, N, 0)
-    inicializar_array(ITOC, M, 0)
-    inicializar_array(STOCE, N, 0)
-    inicializar_array(STOC, M, 0)
-    inicializar_array(PTOCE, N, 0)
-    inicializar_array(PTOC, M, 0)
+function inicializacion(C, CE){
+    inicializar_array(TPSCE, CE, HV)
+    inicializar_array(TPSC, C, HV)
+    inicializar_array(ITOCE, CE, 0)
+    inicializar_array(ITOC, C, 0)
+    inicializar_array(STOCE, CE, 0)
+    inicializar_array(STOC, C, 0)
+    inicializar_array(PTOCE, CE, 0)
+    inicializar_array(PTOC, C, 0)
     
-    let T = 0
-    let TF = 0
-    let TPLL = 0
-    let NTCE = 0 //personas totales CE
-    let NTC = 0 //personas totales C
-    let STAC = 0 //sumatoria TA C
-    let STAE = 0 //sumatoria TA CE
-    let SLLCE = 0 //sumatoria llegadas CE
-    let SLLC = 0 //sumatoria llegadas C
-    let SSE = 0 //sumatoria salida CE
-    let SSC = 0 //sumatoria salida C
+    T = 0
+    TF = 20
+    TPLL = 0
+    NSC = 0
+    NSCE = 0
+    NTCE = 0 //personas totales CE
+    NTC = 0 //personas totales C
+    STAC = 0 //sumatoria TA C
+    STAE = 0 //sumatoria TA CE
+    SLLCE = 0 //sumatoria llegadas CE
+    SLLC = 0 //sumatoria llegadas C
+    SSE = 0 //sumatoria salida CE
+    SSC = 0 //sumatoria salida C
+    PEC = 0 //promedio espera C
+    PECE = 0 //promedio espera CE
+    SACE = 0 //sumatoria arrepentidos CE
+    SAC = 0 //sumatoria arrepentidos C
 }
 
 function algoritmo(C, CE){
@@ -58,11 +68,12 @@ function algoritmo(C, CE){
     while(T < TF){
         metodologia(C, CE)
     }
-
+    /*
     while(NSC > 0 && NSCE > 0){
         metodologia(C, CE)
         TPLL = HV
     }
+    */
 
     PEC = (SSC - SLLC - STAC) / NTC //promedio espera
     PECE = (SSE - SLLCE - STAE) / NTC //promedio espera
@@ -74,13 +85,9 @@ function algoritmo(C, CE){
     for(let i = 0; i < C; i++){
         ITOC[i] = STOC[i] * 100 / T
     }
-
-    //FALTA ARREPENTIMIENTO
-
-    //imprimir
 }
 
-function metodologia(N, M){
+function metodologia(C, CE){
     let i = menor(TPSC)
     let j = menor(TPSCE)
 
@@ -100,53 +107,96 @@ function metodologia(N, M){
 }
 
 function llegada(C, CE){
-    SPS += (TPLL - T) * NS
     T = TPLL
     let ia = generar_ia()
     TPLL = T + ia
-    //arrepentimiento?
-    NS++
-    NT++
-    if(NS <= M){
-        let i = TPSC.indexOf(HV) //profesor libre
-        let tap = generar_tac()
-        TPSC[i] = T + tap
-        STAP += tap
-        STOP[i] += T - ITOP[i]
-    }else if(NS <= M + N){
-        let i = TPSCE.indexOf(HV) //ayudante libre
-        let taa = generar_tae()
-        TPSCE[i] = T + taa
-        STAA += taa
-        STOA[i] += T - ITOA[i]
+    let r = Math.random();
+    
+    if(r<=0.31){ //eminent
+        let a = arrepentimiento_c(C)
+        if(!a){
+            SLLCE += T
+            NSCE++
+            if(NSCE<=CE){
+                let j = TPSC.indexOf(HV) //buscar puesto
+                let tae = generar_tae()
+                TPSCE[j] = T + tae
+                STAE += tae
+                STOCE[j] += (T-ITOCE[j])
+            }
+        }
+    }else{ //normal
+        let a = arrepentimiento_ce(CE)
+        if(!a){
+            SLLC += T
+            NSC++
+            if(NSC<=C){
+                let i = TPSC.indexOf(HV) //buscar puesto
+                let tac = generar_tac()
+                TPSC[i] = T + tac
+                STAC += tac
+                STOC[i] += (T-ITOC[i])
+            }
+        }
+        
     }
 }
 
 function salida_C(i, C, CE){
-    SPS += (TPSC[i] - T) * NS
     T = TPSC[i]
-    NS--
-    if(NS >= M){
-        let tap = generar_tac()
-        TPSC[i] = T + tap
-        STAP += tap
+    NSC--
+    if(NSC >= C){
+        let tac = generar_tac()
+        TPSC[i] = T + tac
+        STAC += tac
     }else{
-        ITOP[i] = T
+        ITOC[i] = T
         TPSC[i] = HV
+    }
+    SSC += T
+    NTC++
+}
+
+function salida_CE(i, C, CE){
+    T = TPSCE[i]
+    NSCE--
+    if(NSCE >= CE){
+        let tae = generar_tae()
+        TPSCE[i] = T + tae
+        STAE += tae
+    }else{
+        ITOCE[i] = T
+        TPSCE[i] = HV
+    }
+    SSE += T
+    NTCE++
+}
+
+function arrepentimiento_c(C){
+    if(NSCE > C + 8){
+        let r = Math.random();
+        if(r<0.3){
+            SAC++
+            return true //si es verdadero se arrepintio
+        }else{
+            return  false //si es falso no se arrepintio
+        }
+    }else{
+        return  false //si es falso no se arrepintio
     }
 }
 
-function salida_CE(i, N, M){
-    SPS += (TPSCE[i] - T) * NS
-    T = TPSCE[i]
-    NS--
-    if(NS >= M + N){
-        let taa = generar_tae()
-        TPSCE[i] = T + taa
-        STAA += taa
+function arrepentimiento_ce(CE){
+    if(NSCE > CE + 2){
+        let r = Math.random();
+        if(r<0.1){
+            SACE++
+            return true //si es verdadero se arrepintio
+        }else{
+            return  false //si es falso no se arrepintio
+        }
     }else{
-        ITOA[i] = T
-        TPSCE[i] = HV
+        return  false //si es falso no se arrepintio
     }
 }
 
@@ -161,16 +211,20 @@ function menor(array){
 }
 
 function generar_tac(){
-    return Math.random();
+    let r = Math.random();
+    return 1/(Math.PI*30.172*(1+((r-127.9)/30.172)^2))
 }
 
 function generar_tae(){
-    return Math.random();
+    let r = Math.random();
+    return ((Math.E)^(-(r/59.033)^0.93206))*(0.9320/59.033)*(r/59.033)^(0.93206-1)
 }
 
 function generar_ia(){
-    return Math.random();
+    let r = Math.random();
+    return (0.03825/57.964)*(1+ (r+0.45892)/57.964)^(-0.03825-1)
 }
 
-algoritmo(2, 4)
-console.log()
+
+algoritmo(2,3)
+console.log(PEC, PECE)
