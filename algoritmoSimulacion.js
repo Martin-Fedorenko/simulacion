@@ -212,19 +212,21 @@ function menor(array){
 
 function generar_tac(){
     let r = Math.random();
-    return 1/(Math.PI*30.172*(1+((r-127.9)/30.172)^2))
+    //return 1/(Math.PI*30.172*(1+((r-127.9)/30.172)^2))
+    return 127.29 + 30.172*Math.tan(Math.PI*(r-0.5))
 }
 
 function generar_tae(){
     let r = Math.random();
-    return ((Math.E)^(-(r/59.033)^0.93206))*(0.9320/59.033)*(r/59.033)^(0.93206-1)
+    return 59.033*(-Math.log(1-r))^(1/0.93206)
 }
 
 function generar_ia(){
     let r = Math.random();
-    return (0.03825/57.964)*(1+ (r+0.45892)/57.964)^(-0.03825-1)
+    return 57.964*((0.03825/57.964*r)^(4000/4153))-58.42292
 }
 
 
 algoritmo(2,3)
-console.log(PEC, PECE)
+console.log(NSC, NSCE)
+console.log(NTC, NTCE)
