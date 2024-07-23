@@ -1,6 +1,7 @@
 import random
 import math
 import time
+import numpy
 from datetime import datetime, timedelta
 
 ### C.I. ###
@@ -50,11 +51,23 @@ while True:
         print("\nError: Solo se permiten numeros enteros.\n")
         continue
 
-def obtener_PH(): #peticiones por hora
-    R = random.uniform(0, 1)
-    #ACA VA LA FORMULA DE LA FDP
-    PH = 0
-    return  PH 
+# FDP POISSON CON LAMBDA = (3000+1000) / 2 = 2000
+def obtener_PH(): #Peticiones por Hora
+    LAMBDA = 2000
+    FDP = numpy.random.POISSON(LAMBDA)
+    
+    # Si queremos que la FDP sea estrictamente entre 1000 y 3000, descomentar linea de abajo
+    # FDP = max(1000, min(3000, FDP))
+
+    return FDP 
+
+# 0.08% de probabilidad de recibir ataque DDoS por hora
+def existe_ataque_DDoS():
+    probabilidad = np.random.rand()
+    if (probabilidad < 0.08) :
+        DDOS_FLAG = true
+    else :
+        DDOS_FLAG = false
 
 def obtener_hora():
     global T
@@ -93,6 +106,9 @@ def obtener_max_peticiones_ram():
     global MEM_PETICION
     return obtener_capacidad_ram/MEM_PETICION
 
+def mantenimiento():
+
+
 def resultados():
     global T
 
@@ -120,7 +136,13 @@ def realizar_simulacion():
         if obtener_hora() in [18, 19, 20, 21, 22]:
             ph = ph * 3
 
-        # FALTAN LAS OTRAS CONDICIONES
+        existe_ataque_DDoS()
+
+        if (DDOS_FLAG):
+            ph = p * 10 # aumenta en un 1000% las peticiones
+            # TODO: verificar si supera por un 100% la cant max peticiones que permite procesar el servidor
+            if (supera) :
+                mantenimiento()
 
         ### GENERO, CALCULO O USO TODO LO QUE SALE ###
 
