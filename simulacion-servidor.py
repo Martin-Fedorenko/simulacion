@@ -109,10 +109,10 @@ def porcentaje_aumento_evento(mes_evento, dia_evento):
         return 1
     
 def porcentaje_aumento_evento_anticipado(mes_evento, dia_evento):
-    fecha = obtener_fecha()
-    evento = datetime(fecha.year, mes_evento, dia_evento)
+    fecha_actual = obtener_fecha()
+    evento = datetime(fecha_actual.year, mes_evento, dia_evento)
 
-    dias_restantes = (evento-fecha).days
+    dias_restantes = (evento-fecha_actual).days
     
     if dias_restantes >= 0:
         return 1+0.15*(-dias_restantes+5)
@@ -198,12 +198,11 @@ def realizar_simulacion():
             print(f"{BLUE}COMIENZO MES{RESET}")
             ph = ph * 15
         
-
         ### GENERO, CALCULO O USO TODO LO QUE SALE ###
         
         #mantenimiento activo
-
-        """
+        
+        # Si quedan horas de mantenimiento, restar; caso contrario, volver a estado normal
         if MANTENIMIENTO_ACTIVO >= 1:
             MANTENIMIENTO_ACTIVO = MANTENIMIENTO_ACTIVO - 1
         else:
@@ -216,9 +215,10 @@ def realizar_simulacion():
             
         #mantenimiento por ataque ddos
         
-        if MANTENIMIENTO_ACTIVO == 0 and (ph >= 2*CAP_CPU or ph >= 2*CAP_RAM):
+        # Si hay ataque DDoS, no hay mantenimiento activo y se duplica la capacidad de cpu o ram => mantenimiento
+        if DDOS_FLAG and MANTENIMIENTO_ACTIVO == 0 and (ph >= 2*CAP_CPU or ph >= 2*CAP_RAM):
             mantenimiento()
-        """
+        
         ### MODIFICO VAR DE ESTADO CON TODO LO QUE SALE Y ENTRA ###
 
         print(f"PH: {ph}")
