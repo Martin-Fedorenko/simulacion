@@ -20,7 +20,7 @@ VC = 0
 M = 0
 
 INS_PETICION = 50000 #cantidad instrucciones promedio por peticion
-MEM_PETICION = 10 #cantidad memoria promedio por peticion (KB)
+MEM_PETICION = 5000 #cantidad memoria promedio por peticion (KB)
 
 # VARIABLES DE RESULTADO
 CVCS = 0 # cantidad de veces que la capacidad del servidor fue superada
@@ -218,7 +218,7 @@ def realizar_simulacion():
             mantenimiento()
         
         ph = round(ph, 0)
-        
+
         CPT += ph
 
         ### MODIFICO VAR DE ESTADO CON TODO LO QUE SALE Y ENTRA ###
