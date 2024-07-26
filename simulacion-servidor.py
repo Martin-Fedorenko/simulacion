@@ -23,10 +23,10 @@ INS_PETICION = 50000 #cantidad instrucciones promedio por peticion
 MEM_PETICION = 10 #cantidad memoria promedio por peticion (KB)
 
 # VARIABLES DE RESULTADO
-CVCS = 0
-PRF = 0
-PCF = 0
-PPR = 0
+CVCS = 0 # cantidad de veces que la capacidad del servidor fue superada
+PRF = 0 # promedio de ram faltante
+PCF = 0 # promedio de cpu faltante
+PPR = 0 # porcentaje de peticiones rechazadas
 
 # VARIABLES DE ESTADO
 P = 0
@@ -34,11 +34,13 @@ P = 0
 # VARIABLES AUXILIARES
 T=0
 #TF = 24 * 365 * 10 # 10 años de simulación 24 horas al dia
-TF = 24*4
+TF = 24 * 365 * 10
 FECHA_INICIAL = datetime(2024, 12, 22)
 SPRF = 0 #sumatoria
 SPCF = 0 #sumatoria
-SPPR = 0 #sumatoria
+SPPR = 0 #sumatoria de peticiones rechazadas
+CPT = 0 #cantidad de peticiones totales
+CVDDoS = 0 #cantidad de veces que hubo ataque DDoS
 DDOS_FLAG = False
 MANTENIMIENTO_ACTIVO = 0
 CAP_CPU = 0
@@ -49,32 +51,36 @@ HV = 9999999999999
 while True:
     try:
         ### VARIABLES DE CONTROL ###
-        M = int(input("Cantidad de memoria RAM en KB (M): "))
+        M = int(input("Cantidad de memoria RAM en GB (M): "))
         N = int(input("Cantidad de nucleos (N): "))
         H = int(input("Cantidad de hilos (H): "))
-        VC = int(input("Velocidad clock en Hz, NO en Ghz (VC): "))
+        VC = int(input("Velocidad clock en GHz (VC): "))
         IPC = int(input("Cantidad de instrucciones por ciclo (IPC): "))
-        CAP_CPU = (N*H*IPC*VC*3600)/(INS_PETICION)
-        CAP_RAM = (M/MEM_PETICION)
+        CAP_CPU = (N * H * IPC * (VC*1000000000) * 3600) / (INS_PETICION)
+        CAP_RAM = (M*1000000 / MEM_PETICION)
+
+        CAP_CPU = round(CAP_CPU, 2)
+        CAP_RAM = round(CAP_RAM, 2)
 
         break
     except ValueError:
         print("\nError: Solo se permiten numeros enteros.\n")
         continue
 
-# FDP POISSON CON LAMBDA = (3000+1000) / 2 = 2000
+# FDP POISSON CON LAMBDA = 2000
 def obtener_PH(): #Peticiones por Hora
     LAMBDA = 2000
     FDP = numpy.random.poisson(LAMBDA)
-    return FDP 
+    return round(FDP)
 
 # 0.08% de probabilidad de recibir ataque DDoS por hora
 def ocurrencia_ataque_DDoS():
-    global DDOS_FLAG
+    global DDOS_FLAG, CVDDoS
     probabilidad = numpy.random.rand()
 
-    if (probabilidad < 0.08):
+    if (probabilidad < 0.008):
         DDOS_FLAG = True
+        CVDDoS += 1
     else:
         DDOS_FLAG = False
 
@@ -122,36 +128,34 @@ def porcentaje_aumento_evento_anticipado(mes_evento, dia_evento):
 
 def mantenimiento():
     global CAP_CPU, CAP_RAM, MANTENIMIENTO_ACTIVO
-    CAP_CPU = CAP_CPU*0.8
-    CAP_RAM = CAP_RAM*0.8
+    CAP_CPU = CAP_CPU * 0.8
+    CAP_RAM = CAP_RAM * 0.8
     MANTENIMIENTO_ACTIVO = 2
-    
-def sin_mantenimiento():
-    global CAP_CPU, CAP_RAM, MANTENIMIENTO_ACTIVO
-    CAP_CPU = CAP_CPU/0.8
-    CAP_RAM = CAP_RAM/0.8
-    MANTENIMIENTO_ACTIVO = 0
 
 def resultados():
-    global T, SPPR, SPCF,SPRF
+    global T, SPPR, SPCF, SPRF, CVDDoS, CPT
 
-    if(CVCS!=0):
-        PRF = (SPRF * MEM_PETICION) / (CVCS)
-        PCF = (SPCF * INS_PETICION) / (CVCS * 3600)
-        PPR = SPPR / CVCS
+    if CVCS != 0:
+        PRF = (SPRF * MEM_PETICION) / CVCS / 1000000  # Convierte KB a GB
+        PRF = round(PRF)
+        PCF = (SPCF * INS_PETICION) / (CVCS * 3600) / 1000000000  # Convierte a GHz
+        PCF = round(PCF, 2)
+        PPR = (SPPR * 100) / CPT
+        PPR = round(PPR, 2)
     else:
         PRF = 0
         PCF = 0
         PPR = 0
 
     print(f"Cantidad de veces capacidad del servidor superada {CVCS}")
-    print(f"Promedio de capacidad de RAM faltante (KB): {PRF}")
-    print(f"Promedio de capacidad de CPU faltante : {PCF}")
-    print(f"Promedio peticiones rechazadas: {PPR}")
+    print(f"Promedio de capacidad de RAM faltante: {PRF} Kbs")
+    print(f"Promedio de capacidad de CPU faltante: {PCF} GHz")
+    print(f"Porcentaje de peticiones rechazadas: {PPR}%")
+    print(f"Cantidad de veces que se sufrio ataque DDoS: {CVDDoS}")
 
 
 def realizar_simulacion():
-    global T, P, CAP_CPU, CAP_RAM, CVCS, MANTENIMIENTO_ACTIVO, SPPR, SPCF,SPRF
+    global T, P, CAP_CPU, CAP_RAM, CVCS, MANTENIMIENTO_ACTIVO, SPPR, SPCF,SPRF,CPT
     while True:
         fecha = obtener_fecha()
         
@@ -159,26 +163,23 @@ def realizar_simulacion():
 
         print(f"{BLUE}Fecha: {fecha}{RESET}")
         
-        T=T+1
+        T += 1
 
         ### GENERO, CALCULO O USO TODO LO QUE ENTRA ###
-
-        ph = obtener_PH() #OK
+        ph = obtener_PH()
         
-        #PH horas pico #OK
-        
-        if obtener_hora() in [18, 19, 20, 21, 22]: 
-            ph = ph * 3
+        #PH horas pico
+        if obtener_hora() in [18, 19, 20, 21, 22]:
+            ph *= 3
         
         #PH ante ocurrencia de ataque DDOS
-
         ocurrencia_ataque_DDoS()
 
         if (DDOS_FLAG):
             print(f"{YELLOW}DDOS{RESET}")
-            ph = ph * 10
+            ph *= 10
             
-        #PH ante dia festivo #OK
+        #PH ante dia festivo
         
         a1 = porcentaje_aumento_evento_anticipado(11, 20)
         a2 = porcentaje_aumento_evento_anticipado(6, 1)
@@ -191,38 +192,36 @@ def realizar_simulacion():
         a8 = porcentaje_aumento_evento(5, 15)
         a9 = porcentaje_aumento_evento(12, 2)
 
-        ph = ph*a1*a2*a3*a4*a5*a6*a7*a8*a9
+        ph = ph * a1 * a2 * a3 * a4 * a5 * a6 * a7 * a8 * a9
         
-        #PH ante evento trimestral #OK
+        #PH ante evento trimestral
         if es_comienzo_trimestre() == True:
             print(f"{BLUE}COMIENZO MES{RESET}")
-            ph = ph * 15
+            ph *= 15
         
         ### GENERO, CALCULO O USO TODO LO QUE SALE ###
+        ph = max(0, min(ph, 1e8))
         
-        #mantenimiento activo
-        
-        # Si quedan horas de mantenimiento, restar; caso contrario, volver a estado normal
+        # Si quedan horas de mantenimiento, restar
         if MANTENIMIENTO_ACTIVO >= 1:
-            MANTENIMIENTO_ACTIVO = MANTENIMIENTO_ACTIVO - 1
-        else:
-            sin_mantenimiento()
+            MANTENIMIENTO_ACTIVO -= 1
+            if MANTENIMIENTO_ACTIVO == 0: # si se terminaron las horas de mantenimiento, vuelve a la normalidad
+                CAP_CPU = CAP_CPU / 0.8
+                CAP_RAM = CAP_RAM / 0.8
             
-        #mantenimiento mensual
-        
+        # Mantenimiento mensual
         if es_comienzo_mes() == True:
             mantenimiento()
-            
-        #mantenimiento por ataque ddos
         
         # Si hay ataque DDoS, no hay mantenimiento activo y se duplica la capacidad de cpu o ram => mantenimiento
-        if DDOS_FLAG and MANTENIMIENTO_ACTIVO == 0 and (ph >= 2*CAP_CPU or ph >= 2*CAP_RAM):
+        if DDOS_FLAG and MANTENIMIENTO_ACTIVO == 0 and (ph >= CAP_CPU*2 or ph >= CAP_RAM*2):
             mantenimiento()
         
+        CPT += ph
+
         ### MODIFICO VAR DE ESTADO CON TODO LO QUE SALE Y ENTRA ###
 
         print(f"PH: {ph}")
-       
         print(f"CPU: {CAP_CPU}")
         print(f"RAM: {CAP_RAM}")
 
@@ -232,8 +231,8 @@ def realizar_simulacion():
 
         if P<0:
             print(f"{RED}T: {T}{RESET}")
-            CVCS = CVCS + 1
-            SPPR = SPPR + abs(P)
+            CVCS += 1
+            SPPR += abs(P) #sumatoria de peticiones rechazadas
 
             if ph>CAP_CPU:
                 SPCF += ph - CAP_CPU
@@ -246,6 +245,7 @@ def realizar_simulacion():
         P = 0
 
         if T < TF:
+            ph = 0
             continue
         else:
             break
