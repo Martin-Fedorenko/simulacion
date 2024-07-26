@@ -103,7 +103,8 @@ def es_comienzo_trimestre():
     
 def es_comienzo_mes():
     dia = obtener_fecha().day
-    return dia == 1
+    hora = obtener_hora()
+    return dia == 1 and hora == 1
 
 def porcentaje_aumento_evento(mes_evento, dia_evento):
     fecha = obtener_fecha()
@@ -120,8 +121,8 @@ def porcentaje_aumento_evento_anticipado(mes_evento, dia_evento):
 
     dias_restantes = (evento-fecha_actual).days
     
-    if dias_restantes >= 0:
-        return 1+0.15*(-dias_restantes+5)
+    if dias_restantes >= 0 and dias_restantes < 7:
+        return 1 + 0.15 * (-dias_restantes + 5)
     else:
         return 1
     
@@ -200,7 +201,6 @@ def realizar_simulacion():
             ph *= 15
         
         ### GENERO, CALCULO O USO TODO LO QUE SALE ###
-        ph = max(0, min(ph, 1e8))
         
         # Si quedan horas de mantenimiento, restar
         if MANTENIMIENTO_ACTIVO >= 1:
@@ -216,6 +216,8 @@ def realizar_simulacion():
         # Si hay ataque DDoS, no hay mantenimiento activo y se duplica la capacidad de cpu o ram => mantenimiento
         if DDOS_FLAG and MANTENIMIENTO_ACTIVO == 0 and (ph >= CAP_CPU*2 or ph >= CAP_RAM*2):
             mantenimiento()
+        
+        ph = round(ph, 0)
         
         CPT += ph
 
