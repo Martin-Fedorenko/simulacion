@@ -20,7 +20,7 @@ VC = 0
 M = 0
 
 INS_PETICION = 50000 #cantidad instrucciones promedio por peticion
-MEM_PETICION = 5000 #cantidad memoria promedio por peticion (KB)
+MEM_PETICION = 2500 #cantidad memoria promedio por peticion (KB)
 
 # VARIABLES DE RESULTADO
 CVCS = 0 # cantidad de veces que la capacidad del servidor fue superada
@@ -78,7 +78,7 @@ def ocurrencia_ataque_DDoS():
     global DDOS_FLAG, CVDDoS
     probabilidad = numpy.random.rand()
 
-    if (probabilidad < 0.008):
+    if (probabilidad < 0.0008):
         DDOS_FLAG = True
         CVDDoS += 1
     else:
@@ -137,9 +137,11 @@ def resultados():
     global T, SPPR, SPCF, SPRF, CVDDoS, CPT
 
     if CVCS != 0:
-        PRF = (SPRF * MEM_PETICION) / CVCS / 1000000  # Convierte KB a GB
-        PRF = round(PRF)
-        PCF = (SPCF * INS_PETICION) / (CVCS * 3600) / 1000000000  # Convierte a GHz
+        # PRF = (SPRF * MEM_PETICION) / CVCS / 1000000  # Convierte KB a GB
+        PRF = (SPRF * 100) / (CAP_RAM * 24 * 365 * 10)
+        PRF = round(PRF, 2)
+        # PCF = (SPCF * INS_PETICION) / (CVCS * 3600) / 1000000000  # Convierte a GHz
+        PCF = (SPCF * 100) / (CAP_CPU * 24 * 365 * 10)
         PCF = round(PCF, 2)
         PPR = (SPPR * 100) / CPT
         PPR = round(PPR, 2)
@@ -149,8 +151,8 @@ def resultados():
         PPR = 0
 
     print(f"Cantidad de veces capacidad del servidor superada {CVCS}")
-    print(f"Promedio de capacidad de RAM faltante: {PRF} Kbs")
-    print(f"Promedio de capacidad de CPU faltante: {PCF} GHz")
+    print(f"Porcentaje de capacidad de RAM faltante: {PRF}%")
+    print(f"Porcentaje de capacidad de CPU faltante: {PCF}%")
     print(f"Porcentaje de peticiones rechazadas: {PPR}%")
     print(f"Cantidad de veces que se sufrio ataque DDoS: {CVDDoS}")
 
